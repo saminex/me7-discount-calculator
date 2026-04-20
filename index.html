@@ -582,7 +582,7 @@ function calculate() {
       <p style="margin-top:12px">
         Coverage: <strong>${cov.toFixed(1)}%</strong> (${F(me7)}/${F(total)}) &nbsp;|&nbsp;
         Term: <strong>${term} mo</strong> (${periods.map(p=>p.months<12?`${p.months}mo Y${p.year}`:`Y${p.year}`).join(' + ')})
-        ${stepSeats>0 ? `&nbsp;|&nbsp; ${seatsLabel}` : ''}
+        ${(stepUp.me3+stepUp.me5)>0 ? `&nbsp;|&nbsp; ${seatsLabel}` : ''}
       </p>
       <div class="discount-grid">${dB("FE Max Discount",maxD)}${dB("FE Max Average",avgD)}${dB("FE Max Exit",exitD)}</div>
       ${over?`<div class="note warn">⚠️ >36 mo. Y4/Y5 exit reduced ${EXIT_RED}pts to <strong>${adjEx}%</strong>.</div>`:''}
