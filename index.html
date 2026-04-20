@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ME7 / A365 Discount Calculator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f3f2f1; color: #323130; padding: 24px; }
+    h1 { text-align: center; color: #0078d4; margin-bottom: 8px; font-size: 1.6rem; }
+    .subtitle { text-align: center; color: #605e5c; margin-bottom: 24px; font-size: 0.9rem; }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 24px; max-width: 900px; margin: 0 auto 20px auto; }
+    .card h2 { color: #0078d4; font-size: 1.1rem; margin-bottom: 16px; border-bottom: 2px solid #0078d4; padding-bottom: 6px; }
+    .card h3 { color: #323130; font-size: 0.95rem; margin: 18px 0 8px 0; font-weight: 700; }
+    label { display: block; font-weight: 600; margin-top: 14px; margin-bottom: 4px; font-size: 0.9rem; }
+    select, input[type="number"] { width: 100%; padding: 8px 12px; border: 1px solid #c8c6c4; border-radius: 4px; font-size: 0.95rem; background: #fff; }
+    select:focus, input:focus { outline: none; border-color: #0078d4; box-shadow: 0 0 0 2px rgba(0,120,212,0.2); }
+    .row { display: flex; gap: 16px; }
+    .row > div { flex: 1; }
+    button { display: inline-block; margin-top: 20px; padding: 10px 28px; background: #0078d4; color: #fff; border: none; border-radius: 4px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+    button:hover { background: #106ebe; }
+    .btn-row { text-align: center; }
+    #results { display: none; max-width: 900px; margin: 0 auto; }
+    .result-card { background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 24px; margin-bottom: 16px; }
+    .result-card h2 { color: #0078d4; font-size: 1.1rem; margin-bottom: 12px; border-bottom: 2px solid #0078d4; padding-bottom: 6px; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-weight: 600; font-size: 0.85rem; margin-right: 8px; }
+    .badge-green { background: #dff6dd; color: #107c10; }
+    .badge-red { background: #fde7e9; color: #d13438; }
+    .badge-yellow { background: #fff4ce; color: #7a6400; }
+    .badge-blue { background: #deecf9; color: #0078d4; }
+    .discount-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 16px 0; }
+    .discount-box { text-align: center; padding: 16px; background: #f3f2f1; border-radius: 6px; }
+    .discount-box .value { font-size: 2rem; font-weight: 700; color: #0078d4; }
+    .discount-box .label { font-size: 0.8rem; color: #605e5c; margin-top: 4px; }
+    .metric-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 16px 0; }
+    .metric-box { text-align: center; padding: 14px; border-radius: 6px; }
+    .metric-box .value { font-size: 1.6rem; font-weight: 700; }
+    .metric-box .label { font-size: 0.78rem; color: #605e5c; margin-top: 4px; }
+    .metric-blue { background: #deecf9; } .metric-blue .value { color: #0078d4; }
+    .metric-green { background: #dff6dd; } .metric-green .value { color: #107c10; }
+    .metric-amber { background: #fff4ce; } .metric-amber .value { color: #7a6400; }
+    table.t { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.88rem; }
+    table.t th, table.t td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #edebe9; }
+    table.t th { background: #f3f2f1; font-weight: 600; }
+    table.t td:not(:first-child), table.t th:not(:first-child) { text-align: right; }
+    table.t tfoot td { font-weight: 700; border-top: 2px solid #0078d4; }
+    table.t tr.reduced { background: #fff4ce; }
+    table.t tr.section-start td { border-top: 2px solid #c8c6c4; }
+    table.t tr.addon td { font-style: italic; color: #605e5c; }
+    .note { background: #f3f2f1; border-left: 4px solid #0078d4; padding: 12px 16px; margin: 12px 0; font-size: 0.88rem; line-height: 1.5; }
+    .note.warn { border-left-color: #ffb900; }
+    .note.good { border-left-color: #107c10; }
+    ul.reqs { padding-left: 20px; margin: 8px 0; font-size: 0.88rem; line-height: 1.7; }
+    .hidden { display: none; }
+    .prereq-check { margin-top: 8px; padding: 10px 14px; background: #fff4ce; border-radius: 4px; font-size: 0.88rem; }
+    .prereq-check label { display: inline; font-weight: normal; margin: 0; }
+    .collapsible { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; }
+    .collapsible::before { content: '▶'; font-size: 0.7rem; transition: transform 0.2s; }
+    .collapsible.open::before { transform: rotate(90deg); }
+    .collapse-body { display: none; margin-top: 12px; }
+    .collapse-body.open { display: block; }
+    .threshold-bar { position: relative; height: 32px; background: #edebe9; border-radius: 6px; margin: 16px 0 8px 0; overflow: visible; }
+    .threshold-fill { height: 100%; border-radius: 6px 0 0 6px; transition: width 0.3s; }
+    .threshold-marker { position: absolute; top: -6px; width: 3px; height: 44px; background: #323130; border-radius: 2px; }
+    .threshold-label { position: absolute; top: 40px; transform: translateX(-50%); font-size: 0.72rem; white-space: nowrap; font-weight: 600; }
+    .fp-input { width: 100%; padding: 6px 8px; border: 1px solid #c8c6c4; border-radius: 4px; font-size: 0.9rem; text-align: right; }
+    .fp-input:focus { outline: none; border-color: #0078d4; box-shadow: 0 0 0 2px rgba(0,120,212,0.2); }
+    #coverageDisplay { font-size: 0.85rem; color: #605e5c; margin-top: 4px; }
+    .sbs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin: 16px 0; }
+    .sbs-col { padding: 16px; }
+    .sbs-col:first-child { background: #f9f9f9; border-right: 2px solid #0078d4; border-radius: 6px 0 0 6px; }
+    .sbs-col:last-child { background: #deecf9; border-radius: 0 6px 6px 0; }
+    .sbs-col h3 { margin: 0 0 12px 0; font-size: 0.95rem; }
+    .sbs-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.88rem; border-bottom: 1px solid rgba(0,0,0,0.06); }
+    .sbs-row:last-child { border-bottom: none; }
+    .sbs-row .lbl { color: #605e5c; }
+    .sbs-row .val { font-weight: 600; }
+    .sbs-total { margin-top: 8px; padding-top: 8px; border-top: 2px solid #0078d4; display: flex; justify-content: space-between; font-weight: 700; font-size: 0.95rem; }
+    .dd-box { margin-top: 16px; padding: 16px; background: #fde7e9; border-radius: 6px; border-left: 4px solid #d13438; }
+    .dd-box p.title { font-weight: 700; color: #d13438; margin-bottom: 8px; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <h1>ME7 / A365 Discount Calculator</h1>
+  <p class="subtitle">Determine maximum discount percentages for ME7 ramp and standalone A365 deals</p>
+
+  <!-- ═══════ SECTION 1: CURRENT PRICING ═══════ -->
+  <div class="card" id="currentPricingCard">
+    <h2>Section 1 — Current Pricing &amp; Revenue</h2>
+    <p style="font-size:0.85rem;color:#605e5c;margin-bottom:12px">
+      Enter the customer's current footprint including add-ons. All revenue is combined to calculate avg revenue per user for ME7 comparison.
+    </p>
+
+    <label for="totalSeats">Total M365 Workforce Seats</label>
+    <input type="number" id="totalSeats" min="1" placeholder="Total licensed M365 users" oninput="this.dataset.manual='1';recalc()" />
+
+    <h3>Base M365 Licenses</h3>
+    <p style="font-size:0.82rem;color:#605e5c;margin-bottom:8px">Enter the weighted average $/user/mo for users being upsold to ME7.</p>
+    <table class="t">
+      <thead><tr><th>Base</th><th style="width:100px">Qty</th><th style="width:140px">Wtd Avg $/User/Mo</th><th style="width:120px">Monthly Rev</th></tr></thead>
+      <tbody>
+        <tr><td>ME3</td>
+          <td><input class="fp-input" type="number" id="me3_qty" min="0" placeholder="0" oninput="recalc()" /></td>
+          <td><input class="fp-input" type="number" id="me3_price" min="0" step="0.01" value="30" oninput="recalc()" /></td>
+          <td id="me3_rev">—</td></tr>
+        <tr><td>ME5</td>
+          <td><input class="fp-input" type="number" id="me5_qty" min="0" placeholder="0" oninput="recalc()" /></td>
+          <td><input class="fp-input" type="number" id="me5_price" min="0" step="0.01" value="50" oninput="recalc()" /></td>
+          <td id="me5_rev">—</td></tr>
+      </tbody>
+      <tfoot><tr><td>Base Total</td><td id="baseTotal">0</td><td id="baseAvg">—</td><td id="baseRev">$0.00</td></tr></tfoot>
+    </table>
+
+    <h3>Displacement Licenses <span style="font-weight:400;font-size:0.82rem;color:#605e5c">(Add-ons included in ME7)</span></h3>
+    <table class="t">
+      <thead><tr><th>Add-On</th><th style="width:100px">Qty</th><th style="width:120px">$/User/Mo</th><th style="width:120px">Monthly Rev</th></tr></thead>
+      <tbody>
+        <tr><td>M365 Copilot</td>
+          <td><input class="fp-input" type="number" id="copilot_qty" min="0" placeholder="0" oninput="recalc()" /></td>
+          <td><input class="fp-input" type="number" id="copilot_price" min="0" step="0.01" value="30" oninput="recalc()" /></td>
+          <td id="copilot_rev">—</td></tr>
+        <tr><td>Entra Suite</td>
+          <td><input class="fp-input" type="number" id="entra_qty" min="0" placeholder="0" oninput="recalc()" /></td>
+          <td><input class="fp-input" type="number" id="entra_price" min="0" step="0.01" value="12" oninput="recalc()" /></td>
+          <td id="entra_rev">—</td></tr>
+        <tr><td>Agent 365</td>
+          <td><input class="fp-input" type="number" id="a365_qty" min="0" placeholder="0" oninput="recalc()" /></td>
+          <td><input class="fp-input" type="number" id="a365_price" min="0" step="0.01" value="50" oninput="recalc()" /></td>
+          <td id="a365_rev">—</td></tr>
+      </tbody>
+      <tfoot><tr><td>Displacement Total</td><td id="addonTotal">0</td><td></td><td id="addonRev">$0.00</td></tr></tfoot>
+    </table>
+
+    <div class="metric-grid" id="revenueMetrics" style="display:none">
+      <div class="metric-box metric-blue">
+        <div class="value" id="metricTotalRev">—</div>
+        <div class="label">Total Monthly Revenue (Base + Displacement)</div>
+      </div>
+      <div class="metric-box metric-green">
+        <div class="value" id="metricAvgRev">—</div>
+        <div class="label">Avg Revenue / Base User / Mo</div>
+      </div>
+      <div class="metric-box metric-amber">
+        <div class="value" id="metricNeutralDisc">—</div>
+        <div class="label">Revenue-Neutral Discount on ME7 ($99)</div>
+      </div>
+    </div>
+    <div id="neutralNote" class="hidden note good">
+      To match current avg revenue of <strong id="noteAvgRev">$0</strong>/user/mo on ME7 ($99 list),
+      the revenue-neutral discount is <strong id="noteNeutralPct">0%</strong>.
+    </div>
+  </div>
+
+  <!-- ═══════ SECTION 2: ME7 DISCOUNT THRESHOLD ═══════ -->
+  <div class="card" id="me7ParamsCard" autocomplete="off">
+    <h2>Section 2 — ME7 Discount Threshold</h2>
+
+    <label for="sku">SKU</label>
+    <select id="sku" autocomplete="off" onchange="onSkuChange()">
+      <option value="">-- Select --</option>
+      <option value="ME7 Full Suite">ME7 Full Suite</option>
+      <option value="ME5 to ME7 Step Up">ME5 to ME7 Step Up</option>
+      <option value="ME3 to ME7 Step Up">ME3 to ME7 Step Up</option>
+      <option value="Entra + A365 Add-On">Entra + A365 Add-On (lead status, E5 &amp; Copilot required)</option>
+      <option value="ME3 to ME5 Step Up">ME3 to ME5 Step Up</option>
+    </select>
+    <div id="prereqBox" class="prereq-check hidden">
+      ⚠️ <strong>Prerequisite:</strong> Requires lead status, E5 license, and M365 Copilot.<br/>
+      <input type="checkbox" id="prereqMet" /> <label for="prereqMet">Customer meets these prerequisites</label>
+    </div>
+
+    <h3 id="seatsHeader">ME7 Seats</h3>
+    <div id="seatFields">
+      <div id="sf_full" class="hidden">
+        <label for="fullSeats">Full Suite Seats (new licenses @ $99/user/mo)</label>
+        <input type="number" id="fullSeats" min="0" placeholder="# of seats" autocomplete="off" oninput="updateCoverage()" />
+      </div>
+      <div id="sf_stepME3" class="hidden">
+        <label for="stepUpME3">ME3 → ME7 Step Up Seats</label>
+        <input type="number" id="stepUpME3" min="0" placeholder="# of seats" autocomplete="off" oninput="updateCoverage()" />
+      </div>
+      <div id="sf_stepME5" class="hidden">
+        <label for="stepUpME5">ME5 → ME7 Step Up Seats</label>
+        <input type="number" id="stepUpME5" min="0" placeholder="# of seats" autocomplete="off" oninput="updateCoverage()" />
+      </div>
+    </div>
+
+    <div id="coverageDisplay"></div>
+
+    <label for="termMonths">Deal Term (months)</label>
+    <input type="number" id="termMonths" min="12" max="60" placeholder="12 – 60" value="36" autocomplete="off" />
+
+    <div class="btn-row">
+      <button onclick="calculate()">Calculate Discounts</button>
+    </div>
+  </div>
+
+  <div id="results"></div>
+
+<script>
+// ─── Data ─────────────────────────────────────────────────────────────────
+const ME7_DISCOUNTS = {
+  "ME7 Full Suite":       { 50: [50,40,30], 80: [50,40,30] },
+  "ME5 to ME7 Step Up":   { 80: [73,60,40] },
+  "ME3 to ME7 Step Up":   { 80: [65,53,38] },
+  "Entra + A365 Add-On":  { 80: [73,60,40] },
+  "ME3 to ME5 Step Up":   { 80: [50,40,30] },
+};
+const ME7_LIST = 99;
+const EXIT_RED = 5;
+
+const ADDON_ROWS = [
+  { id:"copilot", label:"M365 Copilot" },
+  { id:"entra",   label:"Entra Suite" },
+  { id:"a365",    label:"Agent 365" },
+];
+
+// ─── Formatting ───────────────────────────────────────────────────────────
+const F  = n => n.toLocaleString();
+const F2 = n => n.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+
+// ─── Toggle ───────────────────────────────────────────────────────────────
+function onSkuChange() {
+  const sku = document.getElementById("sku").value;
+  document.getElementById("prereqBox").classList.toggle("hidden", sku !== "Entra + A365 Add-On");
+  // Show/hide seat fields based on SKU
+  const full = document.getElementById("sf_full");
+  const me3 = document.getElementById("sf_stepME3");
+  const me5 = document.getElementById("sf_stepME5");
+  full.classList.add("hidden"); me3.classList.add("hidden"); me5.classList.add("hidden");
+  if (sku === "ME7 Full Suite" || sku === "Entra + A365 Add-On") {
+    full.classList.remove("hidden");
+  } else if (sku === "ME5 to ME7 Step Up") {
+    me5.classList.remove("hidden");
+  } else if (sku === "ME3 to ME7 Step Up") {
+    me3.classList.remove("hidden");
+  } else if (sku === "ME3 to ME5 Step Up") {
+    me3.classList.remove("hidden");
+  }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+function getStepUpSeats() {
+  return {
+    me3: parseInt(document.getElementById("stepUpME3").value)||0,
+    me5: parseInt(document.getElementById("stepUpME5").value)||0,
+  };
+}
+function getStepUpTotal() {
+  const s = getStepUpSeats();
+  return s.me3 + s.me5;
+}
+
+function getBase(id) {
+  const q = parseInt(document.getElementById(id+"_qty").value)||0;
+  const p = parseFloat(document.getElementById(id+"_price").value)||0;
+  const rev = q * p;
+  document.getElementById(id+"_rev").textContent = q > 0 ? `$${F2(rev)}` : "—";
+  return { qty: q, price: p, rev };
+}
+
+// ─── Section 1: Recalc ───────────────────────────────────────────────────
+function recalc() {
+  const me3 = getBase("me3");
+  const me5 = getBase("me5");
+  const baseQty = me3.qty + me5.qty;
+  const baseRev = me3.rev + me5.rev;
+
+  let addonQty = 0, addonRev = 0;
+  for (const r of ADDON_ROWS) {
+    const q = parseInt(document.getElementById(r.id+"_qty").value)||0;
+    const p = parseFloat(document.getElementById(r.id+"_price").value)||0;
+    const rv = q * p;
+    document.getElementById(r.id+"_rev").textContent = q > 0 ? `$${F2(rv)}` : "—";
+    addonQty += q; addonRev += rv;
+  }
+  document.getElementById("baseTotal").textContent = F(baseQty);
+  document.getElementById("baseRev").textContent = `$${F2(baseRev)}`;
+  document.getElementById("baseAvg").textContent = baseQty > 0 ? `$${F2(baseRev/baseQty)}` : "—";
+  document.getElementById("addonTotal").textContent = F(addonQty);
+  document.getElementById("addonRev").textContent = `$${F2(addonRev)}`;
+
+  const totalRev = baseRev + addonRev;
+  const totalEl = document.getElementById("totalSeats");
+  // Auto-populate total M365 seats from base qty if user hasn't manually entered a different value
+  if (!totalEl.dataset.manual && baseQty > 0) {
+    totalEl.value = baseQty;
+  }
+  const mEl = document.getElementById("revenueMetrics");
+  const nEl = document.getElementById("neutralNote");
+  if (baseQty > 0) {
+    const avg = totalRev / baseQty;
+    const nd = Math.max(((ME7_LIST - avg) / ME7_LIST) * 100, 0);
+    document.getElementById("metricTotalRev").textContent = `$${F2(totalRev)}`;
+    document.getElementById("metricAvgRev").textContent = `$${F2(avg)}`;
+    document.getElementById("metricNeutralDisc").textContent = `${nd.toFixed(1)}%`;
+    document.getElementById("noteAvgRev").textContent = `$${F2(avg)}`;
+    document.getElementById("noteNeutralPct").textContent = `${nd.toFixed(1)}%`;
+    mEl.style.display = "grid"; nEl.classList.remove("hidden");
+    const suME3 = document.getElementById("stepUpME3");
+    const suME5 = document.getElementById("stepUpME5");
+    if (!suME3.value && !suME5.value && !document.getElementById("fullSeats").value) {
+      if (me3.qty > 0) suME3.value = me3.qty;
+      if (me5.qty > 0) suME5.value = me5.qty;
+    }
+    updateCoverage();
+  } else {
+    document.getElementById("baseAvg").textContent = "—";
+    mEl.style.display = "none"; nEl.classList.add("hidden");
+  }
+}
+
+// ─── Coverage ─────────────────────────────────────────────────────────────
+function getMe7Total() {
+  return (parseInt(document.getElementById("fullSeats").value)||0) + getStepUpTotal();
+}
+function updateCoverage() {
+  const total = parseInt(document.getElementById("totalSeats").value)||0;
+  const me7 = getMe7Total();
+  const el = document.getElementById("coverageDisplay");
+  if (total > 0 && me7 > 0) {
+    el.textContent = `Coverage: ${F(me7)} / ${F(total)} = ${((me7/total)*100).toFixed(1)}%`;
+  } else el.textContent = "";
+}
+
+// ─── Footprint Summary ───────────────────────────────────────────────────
+function getFP() {
+  const rows = []; let baseQty=0, baseRev=0;
+  for (const id of ["me3","me5"]) {
+    const b = getBase(id);
+    if (b.qty > 0) {
+      rows.push({label: id.toUpperCase(), qty:b.qty, price:b.price, rev:b.rev, type:"base", base: id.toUpperCase()});
+      baseQty += b.qty; baseRev += b.rev;
+    }
+  }
+  let addonRev = 0;
+  for (const r of ADDON_ROWS) {
+    const q = parseInt(document.getElementById(r.id+"_qty").value)||0;
+    const p = parseFloat(document.getElementById(r.id+"_price").value)||0;
+    if (q > 0) { rows.push({label:r.label, qty:q, price:p, rev:q*p, type:"addon"}); addonRev += q*p; }
+  }
+  return { rows, baseQty, baseRev, addonRev, totalRev: baseRev + addonRev };
+}
+
+// ─── ME7 Calc ─────────────────────────────────────────────────────────────
+function calculate() {
+  const sku = document.getElementById("sku").value;
+  if (!sku) return alert("Please select a SKU.");
+  if (sku === "Entra + A365 Add-On" && !document.getElementById("prereqMet").checked)
+    return alert("Please confirm prerequisites.");
+  const total = parseInt(document.getElementById("totalSeats").value);
+  const fullSeats = parseInt(document.getElementById("fullSeats").value)||0;
+  const stepUp = getStepUpSeats();
+  const stepSeats = stepUp.me3 + stepUp.me5;
+  const me7 = fullSeats + stepSeats;
+  const term = parseInt(document.getElementById("termMonths").value);
+  if (!total||total<1) return alert("Enter total M365 seats.");
+  if (me7 < 1) return alert("Enter ME7 seats (Full Suite and/or Step Up).");
+  if (me7 > total) return alert("ME7 seats cannot exceed total.");
+  if (!term||term<12||term>60) return alert("Term must be 12–60 months.");
+
+  const cov = (me7/total)*100;
+  const tiers = Object.keys(ME7_DISCOUNTS[sku]).map(Number).sort((a,b)=>a-b);
+  const minR = tiers[0];
+  if (cov < minR) {
+    const need = Math.ceil(total*(minR/100)) - me7;
+    return show(`<div class="result-card"><h2>Result: ${sku}</h2>
+      <span class="badge badge-red">✘ Not Eligible</span>
+      <p style="margin-top:12px">Coverage: <strong>${cov.toFixed(1)}%</strong> (${F(me7)}/${F(total)})</p>
+      <p>Min <strong>${minR}%</strong> required. Need <strong>${F(Math.max(need,0))}</strong> more seats.</p></div>`);
+  }
+  let tier = null;
+  for (let i=tiers.length-1;i>=0;i--) { if (cov>=tiers[i]) {tier=tiers[i]; break;} }
+  const [maxD,avgD,exitD] = ME7_DISCOUNTS[sku][tier];
+  const over = term > 36;
+  const adjEx = exitD - EXIT_RED;
+
+  // Build ramp periods mapped to enrollment years
+  // Deals ≤36mo always end at Year 3; >36mo add Y4/Y5
+  const periods = [];
+  if (term <= 36) {
+    const startOffset = 36 - term; // months into enrollment when deal starts
+    const startYear = Math.floor(startOffset / 12) + 1; // 1-based enrollment year
+    const firstPeriodMonths = 12 - (startOffset % 12);
+    if (firstPeriodMonths < 12) {
+      periods.push({ year: startYear, months: firstPeriodMonths });
+    }
+    const firstFullYear = firstPeriodMonths < 12 ? startYear + 1 : startYear;
+    for (let y = firstFullYear; y <= 3; y++) periods.push({ year: y, months: 12 });
+  } else {
+    // Full 3 years + extra
+    for (let y = 1; y <= 3; y++) periods.push({ year: y, months: 12 });
+    let rem = term - 36;
+    let yr = 4;
+    while (rem > 0) {
+      const m = Math.min(rem, 12);
+      periods.push({ year: yr, months: m });
+      rem -= m; yr++;
+    }
+  }
+  const nPeriods = periods.length;
+
+  const fp = getFP();
+
+  // ── Side-by-side comparison ──
+  let sbsHtml = "";
+  if (fp.baseQty > 0) {
+    const avgRev = fp.totalRev / fp.baseQty;
+    const nd = Math.max(((ME7_LIST - avgRev)/ME7_LIST)*100, 0);
+    const me7Neutral = avgRev;
+
+    // Current side: breakdown with base association for addons
+    let curRows = "";
+    for (const r of fp.rows) {
+      const cls = r.type === "addon" ? ' style="font-style:italic;color:#605e5c"' : '';
+      const tag = r.type === "addon" ? ' <span style="font-size:0.8em">(displacement)</span>' : "";
+      curRows += `<div class="sbs-row"><span class="lbl">${r.label}${tag}</span><span class="val">${F(r.qty)} × $${F2(r.price)} = $${F2(r.rev)}</span></div>`;
+    }
+
+    // ME7 side: breakdown by type
+    let me7Rows = "";
+    if (fullSeats > 0) {
+      me7Rows += `<div class="sbs-row"><span class="lbl">ME7 Full Suite</span><span class="val">${F(fullSeats)} × $${F2(ME7_LIST)} = $${F2(fullSeats*ME7_LIST)}</span></div>`;
+    }
+    if (stepUp.me3 > 0) {
+      me7Rows += `<div class="sbs-row"><span class="lbl">ME3 → ME7 Step Up</span><span class="val">${F(stepUp.me3)} × $${F2(ME7_LIST)} = $${F2(stepUp.me3*ME7_LIST)}</span></div>`;
+    }
+    if (stepUp.me5 > 0) {
+      me7Rows += `<div class="sbs-row"><span class="lbl">ME5 → ME7 Step Up</span><span class="val">${F(stepUp.me5)} × $${F2(ME7_LIST)} = $${F2(stepUp.me5*ME7_LIST)}</span></div>`;
+    }
+    const me7ListTotal = me7 * ME7_LIST;
+
+    // Guidance — nd is the flat revenue-neutral discount, compare against maxD (any-year cap),
+    // NOT avgD (which only constrains the ramp schedule's weighted average)
+    let guidBadge="", guid="", ddHtml="";
+    if (nd <= exitD) {
+      guidBadge = '<span class="badge badge-green">✔ Within Field Empowerment</span>';
+      guid = `Revenue-neutral (${nd.toFixed(1)}%) within FE exit (${exitD}%). <strong>Full ramp available.</strong>`;
+    } else if (nd <= maxD) {
+      guidBadge = '<span class="badge badge-yellow">⚠ Ramp Structuring Needed</span>';
+      guid = `Revenue-neutral (${nd.toFixed(1)}%) within FE max (${maxD}%) but exceeds exit (${exitD}%). <strong>Structure ramp so wtd avg ≤ ${avgD}% and exit year ≤ ${exitD}%.</strong>`;
+    } else {
+      guidBadge = '<span class="badge badge-red">✘ Exceeds Field Empowerment</span>';
+      guid = `Revenue-neutral (${nd.toFixed(1)}%) exceeds FE max (${maxD}%). <strong>Deal Desk approval required.</strong>`;
+    }
+    if (nd > maxD) {
+      const gap = (nd - maxD).toFixed(1);
+      ddHtml = `<div class="dd-box">
+        <p class="title">📋 Deal Desk Ask (Required)</p>
+        <table class="t" style="margin:8px 0;background:#fff;border-radius:4px">
+          <tbody>
+            <tr><td style="text-align:left"><strong>DD Discount Ask</strong></td><td><strong>${nd.toFixed(1)}%</strong></td></tr>
+            <tr><td style="text-align:left">FE Max Discount</td><td>${maxD}%</td></tr>
+            <tr><td style="text-align:left">Gap Above FE</td><td style="color:#d13438;font-weight:600">+${gap}pts</td></tr>
+            <tr><td style="text-align:left">DD $/User/Mo</td><td>$${F2(me7Neutral)}</td></tr>
+            <tr><td style="text-align:left">DD Monthly (${F(me7)} seats)</td><td>$${F2(me7*me7Neutral)}</td></tr>
+            <tr><td style="text-align:left">DD Annual</td><td>$${F2(me7*me7Neutral*12)}</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:0.82rem;color:#605e5c;margin-top:8px">
+          Revenue-neutral exceeds all FE limits. Submit DD request for ${nd.toFixed(1)}% to match $${F2(avgRev)}/user/mo.
+        </p></div>`;
+    } else if (nd > exitD) {
+      ddHtml = `<div class="dd-box">
+        <p class="title">📋 Deal Desk Ask (If targeting revenue-neutral as flat rate)</p>
+        <table class="t" style="margin:8px 0;background:#fff;border-radius:4px">
+          <tbody>
+            <tr><td style="text-align:left"><strong>Revenue-Neutral Discount</strong></td><td><strong>${nd.toFixed(1)}%</strong></td></tr>
+            <tr><td style="text-align:left">FE Max Discount (any year)</td><td>${maxD}%</td></tr>
+            <tr><td style="text-align:left">FE Max Avg Discount</td><td>${avgD}%</td></tr>
+            <tr><td style="text-align:left">FE Max Exit Discount</td><td>${exitD}%</td></tr>
+            <tr><td style="text-align:left">Neutral $/User/Mo</td><td>$${F2(me7Neutral)}</td></tr>
+            <tr><td style="text-align:left">Neutral Monthly (${F(me7)} seats)</td><td>$${F2(me7*me7Neutral)}</td></tr>
+            <tr><td style="text-align:left">Neutral Annual</td><td>$${F2(me7*me7Neutral*12)}</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:0.82rem;color:#605e5c;margin-top:8px">
+          Within FE max (${maxD}%) — structure ramp schedule so wtd avg ≤ ${avgD}% and exit ≤ ${exitD}%, or submit DD for flat ${nd.toFixed(1)}%.
+        </p></div>`;
+    }
+
+
+    sbsHtml = `
+      <div class="result-card">
+        <h2>Side-by-Side: Current vs ME7</h2>
+        <div class="sbs-grid">
+          <div class="sbs-col">
+            <h3>📋 Current Footprint</h3>
+            ${curRows}
+            <div class="sbs-total"><span>Monthly Revenue</span><span>$${F2(fp.totalRev)}</span></div>
+            <div class="sbs-row" style="margin-top:4px"><span class="lbl">Base users</span><span class="val">${F(fp.baseQty)}</span></div>
+            <div class="sbs-row"><span class="lbl">Avg Rev/User/Mo</span><span class="val">$${F2(avgRev)}</span></div>
+          </div>
+          <div class="sbs-col">
+            <h3>🚀 ME7 ($99/user/mo list)</h3>
+            ${me7Rows}
+            <div class="sbs-total"><span>Monthly at List</span><span>$${F2(me7ListTotal)}</span></div>
+            <div class="sbs-row" style="margin-top:4px"><span class="lbl">Total ME7 seats</span><span class="val">${F(me7)}${(fullSeats>0?` ${F(fullSeats)} full`:'') + (stepUp.me3>0?` ${F(stepUp.me3)} ME3→ME7`:'') + (stepUp.me5>0?` ${F(stepUp.me5)} ME5→ME7`:'')}</span></div>
+            <div class="sbs-row"><span class="lbl">Revenue-Neutral</span><span class="val">${nd.toFixed(1)}% → $${F2(me7Neutral)}/user</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="result-card">
+        <h2>Revenue-Neutral Analysis</h2>
+        ${guidBadge}
+        <p style="margin-top:8px;font-size:0.9rem">${guid}</p>
+        <div class="metric-grid" style="margin-top:16px">
+          <div class="metric-box metric-blue"><div class="value">$${F2(avgRev)}</div><div class="label">Current Avg Rev/User/Mo</div></div>
+          <div class="metric-box metric-amber"><div class="value">${nd.toFixed(1)}%</div><div class="label">Revenue-Neutral Discount</div></div>
+          <div class="metric-box metric-green"><div class="value">$${F2(me7Neutral)}</div><div class="label">ME7 Price at Neutral</div></div>
+        </div>
+        <p style="margin-top:16px;font-weight:600;font-size:0.88rem">Discount Threshold Comparison</p>
+        ${thresholdBar(nd, exitD, avgD, maxD)}
+        ${ddHtml}
+      </div>`;
+  }
+
+  // ── Ramp schedule ──
+  // Each enrollment year is ringfenced to its position in the 3-year ramp:
+  // Y1 = maxD, Y2 = midpoint, Y3 = exitD, Y4+ = adjEx
+  const rD = [];
+  for (let i = 0; i < nPeriods; i++) {
+    const yr = periods[i].year;
+    let d;
+    if (yr > 3) { d = adjEx; }
+    else { d = maxD - ((maxD - exitD) * (yr - 1) / 2); }
+    rD.push(Math.round(d * 10) / 10);
+  }
+  // Weighted average by months
+  const totalMonths = periods.reduce((s, p) => s + p.months, 0);
+  const rAvgW = periods.reduce((s, p, i) => s + rD[i] * p.months, 0) / totalMonths;
+  // Encode periods as JSON for updRamp
+  const periodsJson = JSON.stringify(periods.map(p => p.months));
+  const periodsYears = JSON.stringify(periods.map(p => p.year));
+  let rRows = "";
+  for (let i = 0; i < nPeriods; i++) {
+    const p = periods[i];
+    const d = rD[i], pu = ME7_LIST * (1 - d / 100);
+    const mo = me7 * pu, periodTotal = mo * p.months;
+    const label = p.months < 12 ? `Year ${p.year} (${p.months} mo)` : `Year ${p.year}`;
+    rRows += `<tr class="${p.year >= 4 ? 'reduced' : ''}">
+      <td>${label}</td>
+      <td><input class="fp-input ramp-input" type="number" id="rY${i}" value="${d}" min="0" max="${maxD}" step="0.1" style="width:80px;text-align:center" oninput="updRamp(${nPeriods},${me7},${maxD},${avgD},${exitD},${over ? adjEx : exitD},${periodsJson},${periodsYears})" />%</td>
+      <td id="rP${i}">$${F2(pu)}</td><td id="rM${i}">$${F2(mo)}</td><td id="rA${i}">$${F2(periodTotal)}</td></tr>`;
+  }
+  const rTotal = periods.reduce((s, p, i) => s + me7 * ME7_LIST * (1 - rD[i] / 100) * p.months, 0);
+  const seatsLabel = [
+    fullSeats > 0 ? `${F(fullSeats)} Full` : '',
+    stepUp.me3 > 0 ? `${F(stepUp.me3)} ME3→ME7` : '',
+    stepUp.me5 > 0 ? `${F(stepUp.me5)} ME5→ME7` : '',
+  ].filter(Boolean).join(' + ');
+  const seatsHeader = seatsLabel ? `${F(me7)} seats (${seatsLabel})` : `${F(me7)} seats`;
+  let rampHtml = `
+    <div class="result-card">
+      <h2>Ramp Discount Schedule — ${seatsHeader}</h2>
+      <p style="font-size:0.85rem;color:#605e5c;margin-bottom:8px">
+        Suggested ramp ${maxD}% → ${exitD}%${over ? ` (Y4/Y5: ${adjEx}%)` : ''}.  Adjust per year.
+      </p>
+      <table class="t" id="rampTable">
+        <thead><tr><th>Year</th><th>Discount %</th><th>$/User/Mo</th><th>Monthly Total</th><th>Period Total</th></tr></thead>
+        <tbody>${rRows}</tbody>
+        <tfoot><tr><td>Deal Total</td><td id="rAvg">${rAvgW.toFixed(1)}% wtd avg</td><td></td><td></td><td id="rTot">$${F2(rTotal)}</td></tr></tfoot>
+      </table>
+      <div id="rWarn" class="${rAvgW<=avgD?'note good':'note warn'}">
+        ${rAvgW<=avgD ? `✔ Wtd avg discount (${rAvgW.toFixed(1)}%) within FE max avg (${avgD}%).` : `⚠️ Wtd avg discount (${rAvgW.toFixed(1)}%) exceeds FE max avg (${avgD}%). Reduce discounts.`}
+      </div>
+    </div>`;
+
+  // ── Assemble ──
+  let html = `
+    <div class="result-card">
+      <h2>Result: ${sku}</h2>
+      <span class="badge badge-green">✔ Eligible</span>
+      <span class="badge badge-${tier===80?'green':'yellow'}">${tier}% Coverage Tier</span>
+      <p style="margin-top:12px">
+        Coverage: <strong>${cov.toFixed(1)}%</strong> (${F(me7)}/${F(total)}) &nbsp;|&nbsp;
+        Term: <strong>${term} mo</strong> (${periods.map(p=>p.months<12?`${p.months}mo Y${p.year}`:`Y${p.year}`).join(' + ')})
+        ${stepSeats>0 ? `&nbsp;|&nbsp; ${seatsLabel}` : ''}
+      </p>
+      <div class="discount-grid">${dB("FE Max Discount",maxD)}${dB("FE Max Average",avgD)}${dB("FE Max Exit",exitD)}</div>
+      ${over?`<div class="note warn">⚠️ >36 mo. Y4/Y5 exit reduced ${EXIT_RED}pts to <strong>${adjEx}%</strong>.</div>`:''}
+    </div>
+    ${sbsHtml}
+    ${rampHtml}
+    <div class="result-card"><h2>Key Requirements & Notes</h2><ul class="reqs">
+      <li>Customer must not reduce ME7 seats for the term.</li>
+      <li>Amendment <strong>M1295</strong> required.</li>
+      <li>Wall-to-wall Copilot Chat coverage within <strong>12 months</strong>.</li>
+      ${over?`<li>Y4/Y5 exit reduced by ${EXIT_RED}pts.</li>`:''}
+      <li>Mid-term O365: use <strong>Empowerment 887</strong> for unexpired SA credit.</li>
+    </ul></div>
+    <div class="result-card">
+      <h2 class="collapsible" onclick="tog(this)">Enrollment Extension Guidance (Mid-Term)</h2>
+      <div class="collapse-body">
+        <p style="margin-bottom:10px"><strong>By enrollment year:</strong></p>
+        <table class="t"><thead><tr><th>Year</th><th>Extension</th></tr></thead><tbody>
+          <tr><td>Year 1</td><td>+12 mo beyond original expiration</td></tr>
+          <tr><td>Year 2</td><td>+24 mo beyond original expiration</td></tr>
+          <tr><td>Year 3</td><td>Early Commitment (EmpGuide 1851/1078)</td></tr>
+        </tbody></table>
+        <p style="margin-top:14px"><strong>Rules:</strong></p>
+        <ul class="reqs">
+          <li>Amendment <strong>M1296</strong> required</li>
+          <li>Not allowed with new/renewal</li><li>No backdating</li>
+          <li>Original anniversary dates fixed</li><li>Once before renewal</li>
+          <li>Not for enrollments &gt; 3 yr original term</li>
+          <li>Extension pricing at current list; discount % same or lower; unit price same or higher</li>
+          <li>True-down allowed except ME7/step-up/add-on SKUs</li>
+        </ul>
+      </div>
+    </div>`;
+  show(html);
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+function dB(l,v) { return `<div class="discount-box"><div class="value">${v}%</div><div class="label">${l}</div></div>`; }
+function show(h) { const e=document.getElementById("results"); e.innerHTML=h; e.style.display="block"; e.scrollIntoView({behavior:"smooth"}); }
+function tog(el) { el.classList.toggle("open"); el.nextElementSibling.classList.toggle("open"); }
+
+function thresholdBar(nd, exitD, avgD, maxD) {
+  const bMax = Math.max(maxD+10, nd+5, 60);
+  const nP = Math.min((nd/bMax)*100,100), eP = (exitD/bMax)*100, aP = (avgD/bMax)*100, mP = (maxD/bMax)*100;
+  return `<div class="threshold-bar">
+    <div class="threshold-fill" style="width:${nP}%;background:${nd<=maxD?'#107c10':'#d13438'}"></div>
+    <div class="threshold-marker" style="left:${eP}%;background:#0078d4"></div>
+    <div class="threshold-label" style="left:${eP}%;color:#0078d4">Exit ${exitD}%</div>
+    <div class="threshold-marker" style="left:${aP}%;background:#7a6400"></div>
+    <div class="threshold-label" style="left:${aP}%;color:#7a6400;top:56px">Avg ${avgD}%</div>
+    <div class="threshold-marker" style="left:${mP}%;background:#d13438"></div>
+    <div class="threshold-label" style="left:${mP}%;color:#d13438">Max ${maxD}%</div>
+  </div><p style="margin-top:50px;font-size:0.8rem;color:#605e5c">Green bar = revenue-neutral (${nd.toFixed(1)}%) | Markers = FE limits</p>`;
+}
+
+function updRamp(nP, seats, maxD, avgD, exitD, maxEx, periodMonths, periodYears) {
+  let tDW=0, tM=0, tA=0;
+  // Year-based FE caps: Y1=maxD, Y2=midpoint, Y3=exitD, Y4+=maxEx
+  const yrCap = { 1: maxD, 2: Math.round((maxD - (maxD-exitD)/2)*10)/10, 3: exitD };
+  for (let i=0; i<nP; i++) {
+    const mo = periodMonths[i];
+    const yr = periodYears[i];
+    let d = parseFloat(document.getElementById(`rY${i}`).value)||0;
+    if (d<0) d=0;
+    // Cap to the year's FE limit
+    const cap = yr>=4 ? maxEx : (yrCap[yr]||maxD);
+    if (d>cap) d=cap;
+    const pu=ME7_LIST*(1-d/100), monthly=seats*pu, periodTotal=monthly*mo;
+    document.getElementById(`rP${i}`).textContent=`$${F2(pu)}`;
+    document.getElementById(`rM${i}`).textContent=`$${F2(monthly)}`;
+    document.getElementById(`rA${i}`).textContent=`$${F2(periodTotal)}`;
+    tDW+=d*mo; tM+=mo; tA+=periodTotal;
+  }
+  const av=tDW/tM;
+  document.getElementById("rAvg").textContent=`${av.toFixed(1)}% wtd avg`;
+  document.getElementById("rTot").textContent=`$${F2(tA)}`;
+  const w=document.getElementById("rWarn");
+  if (av<=avgD) { w.className="note good"; w.innerHTML=`✔ Wtd avg (${av.toFixed(1)}%) within FE max avg (${avgD}%).`; }
+  else { w.className="note warn"; w.innerHTML=`⚠️ Wtd avg (${av.toFixed(1)}%) exceeds FE max avg (${avgD}%). Reduce discounts.`; }
+}
+</script>
+</body>
+</html>
