@@ -615,7 +615,19 @@ function calculate() {
           <li>True-down allowed except ME7/step-up/add-on SKUs</li>
         </ul>
       </div>
+    </div>
+    <div class="btn-row" style="margin-top:16px;gap:12px;display:flex">
+      <button onclick="generateSlide('internal')">📄 Generate Internal Slide</button>
+      <button onclick="generateSlide('external')">📄 Generate External Slide</button>
     </div>`;
+
+  // Store data for slide generation
+  window._slideData = { sku, tier, cov, me7, total, term, fullSeats, stepUp, seatsHeader,
+    maxD, avgD, exitD, over, adjEx, periods, rD, rAvgW, fp,
+    nd: fp.baseQty > 0 ? Math.max(((ME7_LIST - fp.totalRev/fp.baseQty)/ME7_LIST)*100,0) : null,
+    me7Neutral: fp.baseQty > 0 ? fp.totalRev/fp.baseQty : null
+  };
+
   show(html);
 }
 
@@ -662,6 +674,144 @@ function updRamp(nP, seats, maxD, avgD, exitD, maxEx, periodMonths, periodYears)
   const w=document.getElementById("rWarn");
   if (av<=avgD) { w.className="note good"; w.innerHTML=`✔ Weighted average (${av.toFixed(1)}%) within FE max average (${avgD}%).`; }
   else { w.className="note warn"; w.innerHTML=`⚠️ Weighted average (${av.toFixed(1)}%) exceeds FE max average (${avgD}%). Reduce discounts.`; }
+}
+
+// ─── Slide Generation ─────────────────────────────────────────────────────
+function generateSlide(type) {
+  const d = window._slideData;
+  if (!d) return alert("Please calculate discounts first.");
+
+  // Read current ramp values from inputs
+  const rampRows = [];
+  let totalRev = 0;
+  for (let i = 0; i < d.periods.length; i++) {
+    const disc = parseFloat(document.getElementById("rY"+i).value)||0;
+    const price = ME7_LIST * (1 - disc/100);
+    const monthly = d.me7 * price;
+    const periodTotal = monthly * d.periods[i].months;
+    totalRev += periodTotal;
+    const label = d.periods[i].months < 12 ? `Year ${d.periods[i].year} (${d.periods[i].months} mo)` : `Year ${d.periods[i].year}`;
+    rampRows.push({ label, disc, price, monthly, periodTotal, months: d.periods[i].months });
+  }
+  const totalMonths = d.periods.reduce((s,p) => s + p.months, 0);
+  const wAvg = rampRows.reduce((s,r) => s + r.disc * r.months, 0) / totalMonths;
+
+  const css = `
+    body { font-family: 'Segoe UI', sans-serif; margin: 40px; color: #323130; }
+    h1 { font-size: 1.6rem; color: #0078d4; border-bottom: 3px solid #0078d4; padding-bottom: 8px; }
+    h2 { font-size: 1.1rem; color: #323130; margin-top: 24px; }
+    .meta { font-size: 0.9rem; color: #605e5c; margin: 8px 0 20px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.9rem; }
+    th { background: #f3f2f1; text-align: left; padding: 8px 12px; border-bottom: 2px solid #edebe9; }
+    td { padding: 8px 12px; border-bottom: 1px solid #edebe9; }
+    .highlight { background: #e6f2ff; font-weight: 600; }
+    .metric-row { display: flex; gap: 20px; margin: 16px 0; }
+    .metric { background: #f3f2f1; border-radius: 6px; padding: 12px 20px; text-align: center; flex: 1; }
+    .metric .val { font-size: 1.4rem; font-weight: 700; color: #0078d4; }
+    .metric .lbl { font-size: 0.8rem; color: #605e5c; margin-top: 4px; }
+    .footer { margin-top: 30px; font-size: 0.78rem; color: #a19f9d; border-top: 1px solid #edebe9; padding-top: 10px; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+    .badge-green { background: #dff6dd; color: #107c10; }
+    .badge-yellow { background: #fff4ce; color: #7a6400; }
+    .badge-red { background: #fde7e9; color: #d13438; }
+    @media print { body { margin: 20px; } }
+  `;
+
+  let body = "";
+
+  if (type === "internal") {
+    body = `
+      <h1>ME7 Deal Summary — Internal</h1>
+      <p class="meta">${d.sku} &nbsp;|&nbsp; ${d.tier}% Coverage Tier &nbsp;|&nbsp; ${d.term} month term &nbsp;|&nbsp; ${F(d.me7)} ME7 seats / ${F(d.total)} total</p>
+
+      <h2>Field Empowerment Limits</h2>
+      <div class="metric-row">
+        <div class="metric"><div class="val">${d.maxD}%</div><div class="lbl">FE Max Discount</div></div>
+        <div class="metric"><div class="val">${d.avgD}%</div><div class="lbl">FE Max Average</div></div>
+        <div class="metric"><div class="val">${d.exitD}%</div><div class="lbl">FE Max Exit</div></div>
+        ${d.over ? `<div class="metric"><div class="val">${d.adjEx}%</div><div class="lbl">Y4/Y5 Exit</div></div>` : ''}
+      </div>
+
+      ${d.nd !== null ? `
+      <h2>Revenue-Neutral Analysis</h2>
+      <div class="metric-row">
+        <div class="metric"><div class="val">$${F2(d.fp.totalRev/d.fp.baseQty)}</div><div class="lbl">Current Avg Rev/User/Mo</div></div>
+        <div class="metric"><div class="val">${d.nd.toFixed(1)}%</div><div class="lbl">Revenue-Neutral Discount</div></div>
+        <div class="metric"><div class="val">$${F2(d.me7Neutral)}</div><div class="lbl">ME7 Price at Neutral</div></div>
+      </div>
+      <p>${d.nd <= d.exitD ? '<span class="badge badge-green">✔ Within FE</span>' : d.nd <= d.maxD ? '<span class="badge badge-yellow">⚠ Ramp Structuring Needed</span>' : '<span class="badge badge-red">✘ Exceeds FE — DD Required</span>'}
+      ${d.nd > d.maxD ? ` &nbsp; DD Ask: <strong>${d.nd.toFixed(1)}%</strong> (+${(d.nd - d.maxD).toFixed(1)}pts above FE max)` : ''}</p>
+      ` : ''}
+
+      <h2>Ramp Schedule — ${d.seatsHeader}</h2>
+      <table>
+        <thead><tr><th>Period</th><th>Discount</th><th>$/User/Mo</th><th>Monthly Total</th><th>Period Total</th></tr></thead>
+        <tbody>
+          ${rampRows.map(r => `<tr><td>${r.label}</td><td>${r.disc.toFixed(1)}%</td><td>$${F2(r.price)}</td><td>$${F2(r.monthly)}</td><td>$${F2(r.periodTotal)}</td></tr>`).join('')}
+        </tbody>
+        <tfoot><tr class="highlight"><td>Deal Total</td><td>${wAvg.toFixed(1)}% weighted avg</td><td></td><td></td><td>$${F2(totalRev)}</td></tr></tfoot>
+      </table>
+
+      ${d.fp.baseQty > 0 ? `
+      <h2>Current Footprint</h2>
+      <table>
+        <thead><tr><th>License</th><th>Qty</th><th>$/User/Mo</th><th>Monthly Rev</th></tr></thead>
+        <tbody>${d.fp.rows.map(r => `<tr><td>${r.label}${r.type==='addon'?' (displacement)':''}</td><td>${F(r.qty)}</td><td>$${F2(r.price)}</td><td>$${F2(r.rev)}</td></tr>`).join('')}</tbody>
+        <tfoot><tr class="highlight"><td>Total</td><td>${F(d.fp.baseQty)}</td><td></td><td>$${F2(d.fp.totalRev)}</td></tr></tfoot>
+      </table>` : ''}
+
+      <h2>Key Requirements</h2>
+      <ul>
+        <li>Customer must not reduce ME7 seats for the term (Amendment M1295)</li>
+        <li>Wall-to-wall Copilot Chat coverage within 12 months</li>
+        ${d.over ? '<li>Y4/Y5 exit reduced by 5pts per FE guidelines</li>' : ''}
+      </ul>
+
+      <div class="footer">Internal use only — Generated ${new Date().toLocaleDateString()}</div>
+    `;
+  } else {
+    // External — customer-facing
+    body = `
+      <h1>Microsoft 365 E7 — Pricing Proposal</h1>
+      <p class="meta">${d.term} month term &nbsp;|&nbsp; ${F(d.me7)} seats</p>
+
+      <h2>Ramp Pricing Schedule</h2>
+      <table>
+        <thead><tr><th>Period</th><th>$/User/Mo</th><th>Monthly Investment</th><th>Period Investment</th></tr></thead>
+        <tbody>
+          ${rampRows.map(r => `<tr><td>${r.label}</td><td>$${F2(r.price)}</td><td>$${F2(r.monthly)}</td><td>$${F2(r.periodTotal)}</td></tr>`).join('')}
+        </tbody>
+        <tfoot><tr class="highlight"><td>Total Investment</td><td></td><td></td><td>$${F2(totalRev)}</td></tr></tfoot>
+      </table>
+
+      <div class="metric-row">
+        <div class="metric"><div class="val">$${F2(ME7_LIST)}</div><div class="lbl">List Price/User/Mo</div></div>
+        <div class="metric"><div class="val">${F(d.me7)}</div><div class="lbl">Committed Seats</div></div>
+        <div class="metric"><div class="val">${d.term} mo</div><div class="lbl">Term Length</div></div>
+      </div>
+
+      <h2>Commitment Terms</h2>
+      <ul>
+        <li>Minimum seat commitment of ${F(d.me7)} ME7 seats for the ${d.term}-month term</li>
+        <li>Copilot Chat enablement for all eligible users within 12 months</li>
+        <li>Amendment M1295 required to document seat commitment</li>
+      </ul>
+
+      <h2>What's Included in ME7</h2>
+      <ul>
+        <li>Full Microsoft 365 E5 suite</li>
+        <li>Microsoft 365 Copilot</li>
+        <li>Microsoft Entra Suite</li>
+        <li>Agent 365</li>
+      </ul>
+
+      <div class="footer">Pricing valid as of ${new Date().toLocaleDateString()} &nbsp;|&nbsp; Subject to final agreement terms</div>
+    `;
+  }
+
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>ME7 ${type === 'internal' ? 'Internal' : 'External'} Slide</title><style>${css}</style></head><body>${body}</body></html>`);
+  w.document.close();
 }
 </script>
 </body>
