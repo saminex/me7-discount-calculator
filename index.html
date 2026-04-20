@@ -98,7 +98,7 @@
     <h3>Base M365 Licenses</h3>
     <p style="font-size:0.82rem;color:#605e5c;margin-bottom:8px">Enter the weighted average $/user/mo for users being upsold to ME7.</p>
     <table class="t">
-      <thead><tr><th>Base</th><th style="width:100px">Qty</th><th style="width:140px">Wtd Avg $/User/Mo</th><th style="width:120px">Monthly Rev</th></tr></thead>
+      <thead><tr><th>Base</th><th style="width:100px">Qty</th><th style="width:140px">Weighted Average $/User/Mo</th><th style="width:120px">Monthly Rev</th></tr></thead>
       <tbody>
         <tr><td>ME3</td>
           <td><input class="fp-input" type="number" id="me3_qty" min="0" placeholder="0" oninput="recalc()" /></td>
@@ -445,7 +445,7 @@ function calculate() {
       guid = `Revenue-neutral (${nd.toFixed(1)}%) within FE exit (${exitD}%). <strong>Full ramp available.</strong>`;
     } else if (nd <= maxD) {
       guidBadge = '<span class="badge badge-yellow">⚠ Ramp Structuring Needed</span>';
-      guid = `Revenue-neutral (${nd.toFixed(1)}%) within FE max (${maxD}%) but exceeds exit (${exitD}%). <strong>Structure ramp so wtd avg ≤ ${avgD}% and exit year ≤ ${exitD}%.</strong>`;
+      guid = `Revenue-neutral (${nd.toFixed(1)}%) within FE max (${maxD}%) but exceeds exit (${exitD}%). <strong>Structure ramp so weighted average ≤ ${avgD}% and exit year ≤ ${exitD}%.</strong>`;
     } else {
       guidBadge = '<span class="badge badge-red">✘ Exceeds Field Empowerment</span>';
       guid = `Revenue-neutral (${nd.toFixed(1)}%) exceeds FE max (${maxD}%). <strong>Deal Desk approval required.</strong>`;
@@ -482,7 +482,7 @@ function calculate() {
           </tbody>
         </table>
         <p style="font-size:0.82rem;color:#605e5c;margin-top:8px">
-          Within FE max (${maxD}%) — structure ramp schedule so wtd avg ≤ ${avgD}% and exit ≤ ${exitD}%, or submit DD for flat ${nd.toFixed(1)}%.
+          Within FE max (${maxD}%) — structure ramp schedule so weighted average ≤ ${avgD}% and exit ≤ ${exitD}%, or submit DD for flat ${nd.toFixed(1)}%.
         </p></div>`;
     }
 
@@ -566,10 +566,10 @@ function calculate() {
       <table class="t" id="rampTable">
         <thead><tr><th>Year</th><th>Discount %</th><th>$/User/Mo</th><th>Monthly Total</th><th>Period Total</th></tr></thead>
         <tbody>${rRows}</tbody>
-        <tfoot><tr><td>Deal Total</td><td id="rAvg">${rAvgW.toFixed(1)}% wtd avg</td><td></td><td></td><td id="rTot">$${F2(rTotal)}</td></tr></tfoot>
+        <tfoot><tr><td>Deal Total</td><td id="rAvg">${rAvgW.toFixed(1)}% weighted average</td><td></td><td></td><td id="rTot">$${F2(rTotal)}</td></tr></tfoot>
       </table>
       <div id="rWarn" class="${rAvgW<=avgD?'note good':'note warn'}">
-        ${rAvgW<=avgD ? `✔ Wtd avg discount (${rAvgW.toFixed(1)}%) within FE max avg (${avgD}%).` : `⚠️ Wtd avg discount (${rAvgW.toFixed(1)}%) exceeds FE max avg (${avgD}%). Reduce discounts.`}
+        ${rAvgW<=avgD ? `✔ Weighted average discount (${rAvgW.toFixed(1)}%) within FE max average (${avgD}%).` : `⚠️ Weighted average discount (${rAvgW.toFixed(1)}%) exceeds FE max average (${avgD}%). Reduce discounts.`}
       </div>
     </div>`;
 
@@ -657,11 +657,11 @@ function updRamp(nP, seats, maxD, avgD, exitD, maxEx, periodMonths, periodYears)
     tDW+=d*mo; tM+=mo; tA+=periodTotal;
   }
   const av=tDW/tM;
-  document.getElementById("rAvg").textContent=`${av.toFixed(1)}% wtd avg`;
+  document.getElementById("rAvg").textContent=`${av.toFixed(1)}% weighted average`;
   document.getElementById("rTot").textContent=`$${F2(tA)}`;
   const w=document.getElementById("rWarn");
-  if (av<=avgD) { w.className="note good"; w.innerHTML=`✔ Wtd avg (${av.toFixed(1)}%) within FE max avg (${avgD}%).`; }
-  else { w.className="note warn"; w.innerHTML=`⚠️ Wtd avg (${av.toFixed(1)}%) exceeds FE max avg (${avgD}%). Reduce discounts.`; }
+  if (av<=avgD) { w.className="note good"; w.innerHTML=`✔ Weighted average (${av.toFixed(1)}%) within FE max average (${avgD}%).`; }
+  else { w.className="note warn"; w.innerHTML=`⚠️ Weighted average (${av.toFixed(1)}%) exceeds FE max average (${avgD}%). Reduce discounts.`; }
 }
 </script>
 </body>
