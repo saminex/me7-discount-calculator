@@ -745,19 +745,19 @@ function generateSlide(type) {
 
       <h2>Ramp Schedule — ${d.seatsHeader}</h2>
       <table>
-        <thead><tr><th>Period</th><th>Discount</th><th>$/User/Mo</th><th>Monthly Total</th><th>Period Total</th></tr></thead>
+        <thead><tr><th>Period</th><th>Discount</th><th>$/User/Mo</th><th>Monthly Total</th><th>Annual Total</th><th>Period Total</th></tr></thead>
         <tbody>
-          ${rampRows.map(r => `<tr><td>${r.label}</td><td>${r.disc.toFixed(1)}%</td><td>$${F2(r.price)}</td><td>$${F2(r.monthly)}</td><td>$${F2(r.periodTotal)}</td></tr>`).join('')}
+          ${rampRows.map(r => `<tr><td>${r.label}</td><td>${r.disc.toFixed(1)}%</td><td>$${F2(r.price)}</td><td>$${F2(r.monthly)}</td><td>$${F2(r.monthly*12)}</td><td>$${F2(r.periodTotal)}</td></tr>`).join('')}
         </tbody>
-        <tfoot><tr class="highlight"><td>Deal Total</td><td>${wAvg.toFixed(1)}% weighted avg</td><td></td><td></td><td>$${F2(totalRev)}</td></tr></tfoot>
+        <tfoot><tr class="highlight"><td>Deal Total</td><td>${wAvg.toFixed(1)}% weighted avg</td><td></td><td></td><td></td><td>$${F2(totalRev)}</td></tr></tfoot>
       </table>
 
       ${d.fp.baseQty > 0 ? `
       <h2>Current Footprint</h2>
       <table>
-        <thead><tr><th>License</th><th>Qty</th><th>$/User/Mo</th><th>Monthly Rev</th></tr></thead>
-        <tbody>${d.fp.rows.map(r => `<tr><td>${r.label}${r.type==='addon'?' (displacement)':''}</td><td>${F(r.qty)}</td><td>$${F2(r.price)}</td><td>$${F2(r.rev)}</td></tr>`).join('')}</tbody>
-        <tfoot><tr class="highlight"><td>Total</td><td>${F(d.fp.baseQty)}</td><td></td><td>$${F2(d.fp.totalRev)}</td></tr></tfoot>
+        <thead><tr><th>License</th><th>Qty</th><th>$/User/Mo</th><th>Monthly Rev</th><th>Annual Rev</th></tr></thead>
+        <tbody>${d.fp.rows.map(r => `<tr><td>${r.label}${r.type==='addon'?' (displacement)':''}</td><td>${F(r.qty)}</td><td>$${F2(r.price)}</td><td>$${F2(r.rev)}</td><td>$${F2(r.rev*12)}</td></tr>`).join('')}</tbody>
+        <tfoot><tr class="highlight"><td>Total</td><td>${F(d.fp.baseQty)}</td><td></td><td>$${F2(d.fp.totalRev)}</td><td>$${F2(d.fp.totalRev*12)}</td></tr></tfoot>
       </table>` : ''}
 
       <h2>Key Requirements</h2>
@@ -784,8 +784,18 @@ function generateSlide(type) {
         <tfoot><tr class="highlight"><td>Total Investment</td><td></td><td></td><td>$${F2(totalRev)}</td></tr></tfoot>
       </table>
 
+      <h2>Savings Summary</h2>
       <div class="metric-row">
         <div class="metric"><div class="val">$${F2(ME7_LIST)}</div><div class="lbl">List Price/User/Mo</div></div>
+        <div class="metric"><div class="val">$${F2(d.me7 * ME7_LIST * totalMonths)}</div><div class="lbl">Total at List Price</div></div>
+        <div class="metric"><div class="val">$${F2(totalRev)}</div><div class="lbl">Your Total Investment</div></div>
+        <div class="metric" style="background:#dff6dd"><div class="val" style="color:#107c10">$${F2(d.me7 * ME7_LIST * totalMonths - totalRev)}</div><div class="lbl">Total Savings vs List</div></div>
+      </div>
+      <p style="font-size:0.9rem;color:#605e5c;text-align:center;margin-top:4px">
+        <strong>${wAvg.toFixed(1)}%</strong> average discount over ${d.term} months &nbsp;|&nbsp; ${F(d.me7)} seats
+      </p>
+
+      <div class="metric-row">
         <div class="metric"><div class="val">${F(d.me7)}</div><div class="lbl">Committed Seats</div></div>
         <div class="metric"><div class="val">${d.term} mo</div><div class="lbl">Term Length</div></div>
       </div>
@@ -810,7 +820,7 @@ function generateSlide(type) {
   }
 
   const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>ME7 ${type === 'internal' ? 'Internal' : 'External'} Slide</title><style>${css}</style></head><body>${body}</body></html>`);
+  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>ME7 ' + (type === 'internal' ? 'Internal' : 'External') + ' Slide<\/title><style>' + css + '<\/style><\/head><body>' + body + '<\/body><\/html>');
   w.document.close();
 }
 </script>
