@@ -313,7 +313,11 @@ function recalc() {
 
 // ─── Coverage ─────────────────────────────────────────────────────────────
 function getMe7Total() {
-  return (parseInt(document.getElementById("fullSeats").value)||0) + getStepUpTotal();
+  const sku = document.getElementById("sku").value;
+  if (sku === "ME7 Full Suite" || sku === "Entra + A365 Add-On") return parseInt(document.getElementById("fullSeats").value)||0;
+  if (sku === "ME5 to ME7 Step Up") return parseInt(document.getElementById("stepUpME5").value)||0;
+  if (sku === "ME3 to ME7 Step Up" || sku === "ME3 to ME5 Step Up") return parseInt(document.getElementById("stepUpME3").value)||0;
+  return 0;
 }
 function updateCoverage() {
   const total = parseInt(document.getElementById("totalSeats").value)||0;
@@ -350,10 +354,12 @@ function calculate() {
   if (sku === "Entra + A365 Add-On" && !document.getElementById("prereqMet").checked)
     return alert("Please confirm prerequisites.");
   const total = parseInt(document.getElementById("totalSeats").value);
-  const fullSeats = parseInt(document.getElementById("fullSeats").value)||0;
-  const stepUp = getStepUpSeats();
-  const stepSeats = stepUp.me3 + stepUp.me5;
-  const me7 = fullSeats + stepSeats;
+  const me7 = getMe7Total();
+  const fullSeats = (sku === "ME7 Full Suite" || sku === "Entra + A365 Add-On") ? me7 : 0;
+  const stepUp = {
+    me3: (sku === "ME3 to ME7 Step Up" || sku === "ME3 to ME5 Step Up") ? me7 : 0,
+    me5: (sku === "ME5 to ME7 Step Up") ? me7 : 0,
+  };
   const term = parseInt(document.getElementById("termMonths").value);
   if (!total||total<1) return alert("Enter total M365 seats.");
   if (me7 < 1) return alert("Enter ME7 seats (Full Suite and/or Step Up).");
