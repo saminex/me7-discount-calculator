@@ -502,7 +502,7 @@ function calculate() {
             <h3>🚀 ME7 ($99/user/mo list)</h3>
             ${me7Rows}
             <div class="sbs-total"><span>Monthly at List</span><span>$${F2(me7ListTotal)}</span></div>
-            <div class="sbs-row" style="margin-top:4px"><span class="lbl">Total ME7 seats</span><span class="val">${F(me7)}${(fullSeats>0?` ${F(fullSeats)} full`:'') + (stepUp.me3>0?` ${F(stepUp.me3)} ME3→ME7`:'') + (stepUp.me5>0?` ${F(stepUp.me5)} ME5→ME7`:'')}</span></div>
+            <div class="sbs-row" style="margin-top:4px"><span class="lbl">Total ME7 seats</span><span class="val">${F(me7)}</span></div>
             <div class="sbs-row"><span class="lbl">Revenue-Neutral</span><span class="val">${nd.toFixed(1)}% → $${F2(me7Neutral)}/user</span></div>
           </div>
         </div>
